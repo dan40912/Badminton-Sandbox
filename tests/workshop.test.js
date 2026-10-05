@@ -46,7 +46,7 @@ test("high level players retain distinct strengths within the new budget", () =>
   assert.ok(Object.values(presetStats("attack", 18)).some((x) => x < 10));
 });
 test("specialties are distinct, limited to two, affect abilities and survive sharing", () => {
-  const p = defaults()[0],
+  const p = {...defaults()[0], specialties: []},
     before = effectiveStats(p);
   p.specialties = specialties(["heavy", "heavy", "trick", "rescue", "invalid"]);
   assert.deepEqual(p.specialties, ["heavy", "trick"]);
