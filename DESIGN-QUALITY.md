@@ -51,3 +51,12 @@ Rebuild both screens as a distinctive, polished badminton tactics experience, us
 - Signature workshop: base move, speed/deception/control bonus, charge/risk cost, four colors, trial animation. Active costs work in manual and auto play; passive Wall supports identity/color at its original 100-point cost. Player-card sharing and local saves preserve both workshop and specialties.
 - 40 tests pass, including 40 full seeded series across both pacing modes and custom skills, plus specialty/share/charge/weak-return regressions. Browser checked mobile recommended/all shots, settings, trial canvas, fixed transport, expanded court and no console errors. Dialog overflow found in review and corrected with intrinsic-width constraints.
 - Assets use explicit build versions to prevent stale module/style mixing after updates. No deployment or push performed.
+
+
+## Character roster verification — 2026-10-05
+
+- Desktop: existing paper/sports layout, two team panels, compact character grid, right-side detail drawer. Mixed doubles shows all 16 characters; men's and women's modes show the eight eligible characters.
+- Mobile at 390 × 844: two-column roster, document width equals viewport width (390 px), detail sheet anchored to the bottom (88dvh).
+- Browser interaction verified: full Ethan preset into Player Studio; Studio replacement with Brain; mixed-mode gender replacement; tap assignment of Luna; removal disables court entry; refilling enables it; tap swap between women's slots; entry to the existing court with the assigned lineup; reload keeps saved profiles.
+- Drag handlers use the same assignment / swap rules as tap actions; pure tests verify stable characterId, uniqueness, gender restrictions and retained customized appearance. Synthetic drag through the in-app browser did not produce a drop, so native desktop drag still needs manual verification in Chrome.
+- Full Node suite: 53 / 53 pass, including 100 seeded complete matches, probability invariants, tendency distribution, immutable templates, old profile migration and shared-card compatibility.

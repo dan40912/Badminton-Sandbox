@@ -1,3 +1,4 @@
+import {renderTeamRoster} from "./roster-ui.js?v=20261005-roster";
 import {
   clone,
   clamp,
@@ -22,6 +23,7 @@ import {
   shotOdds,
   soundFor,
   ROSTER,
+  characterPreset, migrateProfile, assignCharacter, moveTeamSlot, fitCharactersToMode, emptySlot,
   slotGender,
   genderOf,
   MAX_LEVEL,
@@ -34,15 +36,15 @@ import {
   POWER_SHOTS,
   SMASHES,
   pointLabel,
-} from "./model.js?v=20261004-radar2";
-import { playHit, unlockAudio } from "./audio.js?v=20261004-radar2";
+} from "./model.js?v=20261005-roster";
+import { playHit, unlockAudio } from "./audio.js?v=20261005-roster";
 import {
   portrait,
   describe,
   escapeHTML,
   TEAM_COLORS,
-} from "./characters.js?v=20261004-radar2";
-import { CourtRenderer, ELEVATION } from "./court.js?v=20261004-radar2";
+} from "./characters.js?v=20261005-roster";
+import { CourtRenderer, ELEVATION } from "./court.js?v=20261005-roster";
 import {
   SPECIALTIES,
   specialties,
@@ -50,7 +52,7 @@ import {
   skillCost,
   skillBonus,
   SKILL_COLORS,
-} from "./workshop.js?v=20261004-radar2";
+} from "./workshop.js?v=20261005-roster";
 import {
   STATS,
   STAT_MAX,
@@ -68,8 +70,8 @@ import {
   RACKETS,
   racketOf,
   effectiveStats,
-} from "./abilities.js?v=20261004-radar2";
-import { radarSVG } from "./radar.js?v=20261004-radar2";
+} from "./abilities.js?v=20261005-roster";
+import { radarSVG } from "./radar.js?v=20261005-roster";
 import {
   summarize,
   insight,
@@ -79,8 +81,8 @@ import {
   decodeCard,
   settlement,
   gameScores,
-} from "./analysis.js?v=20261004-radar2";
-import { shotContext } from "./coaching.js?v=20261004-radar2";
+} from "./analysis.js?v=20261005-roster";
+import { shotContext } from "./coaching.js?v=20261005-roster";
 const $ = (id) => document.getElementById(id),
   safe = escapeHTML;
 const STORAGE = "rally-lab-session-v2",
@@ -211,8 +213,8 @@ function load() {
       )
     )
       return;
-    profiles = data.profiles.map((p) => ({
-      ...p,
+    profiles = data.profiles.map((p) => migrateProfile({
+      ...migrateProfile({...p, name:RENAMED[p.name] ?? p.name}),
       name: RENAMED[p.name] ?? p.name,
       gender: genderOf(p),
       stats: normalizeStats(p.stats, p.level, p.style),
@@ -221,7 +223,7 @@ function load() {
       skillName:
         typeof p.skillName === "string" ? p.skillName.slice(0, 10) : "",
       skillDesign: p.skillDesign ? skillDesign(p.skillDesign) : undefined,
-      specialties: specialties(p.specialties),
+      specialties: specialties(p.specialties ?? migrateProfile(p).specialties),
     }));
     if (
       ["system", "reduce"].includes(data.preferences?.motion) &&
@@ -250,6 +252,7 @@ function load() {
       [1, 3].includes(data.config?.bestOf)
     )
       config = data.config;
+    profiles = fitCharactersToMode(profiles,config.mode);
     if (
       data.match &&
       Array.isArray(data.match.positions) &&
@@ -275,38 +278,31 @@ function gender(i) {
   const m = match && !$("courtPage").hidden ? match.config.mode : config.mode;
   return slotGender(m, i);
 }
-const LOOK = ["name", "gender", "face", "hair", "skin", "accessory"];
-// A new identity uses its default level while retaining the slot's play style.
+// ROSTER is immutable; choosing a character instantiates its complete preset.
 function withIdentity(profile, character) {
-  const wasPreset = JSON.stringify(profile.stats) === JSON.stringify(presetStats(profile.style, profile.level));
-  const next = { ...profile, level: character.level };
-  LOOK.forEach((key) => (next[key] = character[key]));
-  next.stats = wasPreset ? presetStats(next.style, next.level) : normalizeStats(next.stats, next.level, next.style);
-  return next;
+  return characterPreset(character.id);
 }
 function fitRosterToMode() {
-  const swapped = [];
-  profiles.forEach((p, i) => {
-    const need = slotGender(config.mode, i);
-    if (genderOf(p) === need) return;
-    const taken = new Set(profiles.map((x) => x.name)),
-      c = ROSTER.find((c) => c.gender === need && !taken.has(c.name));
-    if (!c) return;
-    swapped.push(`${p.name} → ${c.name}`);
-    profiles[i] = withIdentity(p, c);
-  });
-  return swapped;
+  const before=profiles;
+  profiles=fitCharactersToMode(profiles,config.mode);
+  return profiles.flatMap((p,i)=>p.characterId!==before[i].characterId ? [`${before[i].name} → ${p.name}`]:[]);
+}
+function changeTeam(action) {
+  try {
+    profiles=action();
+    [0,1,2,3].forEach(i=>edited.add(i));
+    markLineup(); save(); renderRoster(); return true;
+  } catch(error) { toast(error.message); return false; }
 }
 function renderRoster() {
-  $("roster").innerHTML = profiles
-    .map(
-      (p, i) =>
-        `<button class="player-card ${i > 1 ? "coral-card" : ""}" data-player="${i}" aria-label="編輯${safe(p.name)}，${p.level}級，${PERSONALITIES[p.personality]}，${STYLES[p.style]}"><div class="player-topline"><span class="player-number">${i < 2 ? "BLUE" : "CORAL"} / 0${(i % 2) + 1} · ${gender(i)}</span><span class="level-pill">LV. ${p.level} · ${tierOf(p.level).name}</span></div><div class="player-portrait">${portrait(p, i)}</div><div class="player-info"><div class="player-name">${safe(p.name)}<span>↗</span></div><div class="player-tags"><span>${PERSONALITIES[p.personality]}</span><span>${STYLES[p.style]}</span><span class="skill-chip">${SKILLS[p.skill]?.icon ?? "★"} ${safe(skillName(p))}</span><span class="racket-chip"><i style="background:${racketOf(p).colors[0]};border-color:${racketOf(p).colors[1]}"></i>${racketOf(p).name}</span></div><p class="player-desc">${describe(p)}</p><div class="card-radar">${radarSVG(effectiveStats(p), { level: p.level, skill: p.skill, color: TEAM_COLORS[i], base: p.stats, size: 160, labels: true, title: `${p.name}的能力（含球拍）` })}<small class="radar-caption">含裝備・刻度 0–13<br>虛線：原始能力</small></div></div></button>`,
-    )
-    .join("");
-  $("roster")
-    .querySelectorAll("[data-player]")
-    .forEach((b) => (b.onclick = () => openEditor(Number(b.dataset.player))));
+  renderTeamRoster($("roster"),profiles,config.mode,{
+    assign:(id,i)=>changeTeam(()=>assignCharacter(profiles,config.mode,id,i)),
+    move:(from,to)=>changeTeam(()=>moveTeamSlot(profiles,config.mode,from,to)),
+    remove:(i)=>changeTeam(()=>profiles.map((p,j)=>j===i?emptySlot(config.mode,i):p)),
+    edit:openEditor, error:toast,
+  });
+  const incomplete=profiles.some(p=>p.vacant);
+  $("enterCourt").disabled=incomplete;
   $("modeTabs")
     .querySelectorAll("button")
     .forEach((b) =>
@@ -317,7 +313,7 @@ function renderRoster() {
   $("enterCourt").innerHTML = match
     ? "回到球場，繼續推演 <span>↗</span>"
     : "陣容就緒，進入球場 <span>↗</span>";
-  $("navCourt").disabled = !match;
+  $("navCourt").disabled = !match || incomplete;
   settingsNotice();
   renderLineupPrompt();
 }
@@ -333,6 +329,7 @@ function settingsNotice() {
       : "";
 }
 function page(which) {
+  if(which === "court" && profiles.some(p=>p.vacant)) {toast("請先選好四位角色再進入球場");return;}
   const court = which === "court";
   if (!court) {
     running = false;
@@ -386,6 +383,7 @@ function openEditor(i) {
   editing = i;
   draft = clone(profiles[i]);
   const map = {
+    hairColor: "hairColor",
     playerName: "name",
     playerLevel: "level",
     playerPersonality: "personality",
@@ -396,6 +394,7 @@ function openEditor(i) {
     accessory: "accessory",
   };
   Object.entries(map).forEach(([id, key]) => ($(id).value = draft[key]));
+  $("identityAccent").value=draft.visualTheme?.accent || "#7b8260";
   draft.stats = normalizeStats(draft.stats, draft.level, draft.style);
   $("playerSkill").innerHTML = Object.entries(SKILLS)
     .map(
@@ -426,12 +425,12 @@ function openEditor(i) {
 function renderPicker() {
   const need = gender(editing),
     others = new Set(
-      profiles.filter((_, i) => i !== editing).map((p) => p.name),
+      profiles.filter((_, i) => i !== editing).map((p) => p.characterId),
     );
   $("characterPicker").innerHTML = ROSTER.filter((c) => c.gender === need)
     .map((c) => {
-      const active = LOOK.every((k) => draft[k] === c[k]),
-        taken = others.has(c.name);
+      const active = draft.characterId === c.id,
+        taken = others.has(c.id);
       return `<button type="button" data-character="${c.id}" aria-pressed="${active}" ${taken ? "disabled" : ""} aria-label="${c.name}${taken ? "（已在陣容中）" : ""}"><span class="picker-face">${portrait(c, editing, { faceOnly: true })}</span><span>${c.name}</span><small>預設 ${c.level} 級</small></button>`;
     })
     .join("");
@@ -441,13 +440,14 @@ function renderPicker() {
       (b) =>
         (b.onclick = () => {
           const c = ROSTER.find((c) => c.id === b.dataset.character);
-          $("playerName").value = c.name;
-          $("playerLevel").value = c.level;
-          $("faceShape").value = c.face;
-          $("hairStyle").value = c.hair;
-          $("skinTone").value = c.skin;
-          $("accessory").value = c.accessory;
-          draft.gender = c.gender;
+          draft = withIdentity(draft,c);
+          for(const [id,key] of Object.entries({playerName:"name", playerLevel:"level", playerPersonality:"personality", playerStyle:"style", faceShape:"face", hairStyle:"hair", skinTone:"skin", accessory:"accessory", playerSkill:"skill"})) $(id).value=draft[key];
+          $("hairColor").value=draft.hairColor; $("identityAccent").value=draft.visualTheme.accent;
+          $("playerSkillName").value="";
+          $("specialtyOne").value=draft.specialties[0]||"";
+          $("specialtyTwo").value=draft.specialties[1]||"";
+          const design=skillDesign();
+          $("skillEffect").value=design.effect; $("skillCost").value=design.cost; $("skillColor").value=design.color;
           updateEditor();
           $("characterPicker")
             .querySelector(`[data-character="${c.id}"]`)
@@ -476,6 +476,8 @@ function updateEditor() {
     style: $("playerStyle").value,
     face: $("faceShape").value,
     hair: $("hairStyle").value,
+    hairColor: $("hairColor").value,
+    visualTheme: {accent: $("identityAccent").value},
     skin: $("skinTone").value,
     accessory: $("accessory").value,
   };
@@ -649,6 +651,9 @@ function checkSharedCard() {
       (b) =>
         (b.onclick = () => {
           const i = Number(b.dataset.slot);
+          if(card.characterId && profiles.some((p,j)=>j!==i && !p.vacant && p.characterId===card.characterId)) {
+            toast("這位角色已在隊伍中，請先移除原位置再匯入");return;
+          }
           profiles[i] = clone(card);
           markLineup();
           edited.add(i);
@@ -696,6 +701,9 @@ $("playerForm").onsubmit = (e) => {
       `請填入姓名，級數須為 1–${MAX_LEVEL} 的整數。`;
     return;
   }
+  if(draft.characterId && profiles.some((p,i)=>i!==editing && !p.vacant && p.characterId===draft.characterId)) {
+    $("playerError").textContent="這位角色已在其他位置";return;
+  }
   const before = profiles[editing];
   if (
     before.level !== draft.level ||
@@ -726,7 +734,7 @@ $("modeTabs")
         save();
         if (swapped.length)
           toast(
-            `已換上符合賽制的球員：${swapped.join("、")}（套用人物預設級數，性格與球風保留）`,
+            `已換上符合賽制的球員：${swapped.join("、")}（套用完整人物預設）`,
           );
       }),
   );
@@ -1740,6 +1748,7 @@ $("restartButton").onclick = () => {
   updateUI();
 };
 $("confirmRestart").onclick = () => {
+  if(profiles.some(p=>p.vacant)){toast("請先選好四位角色再重新開賽");$("restartDialog").close();return;}
   running = false;
   paused = false;
   animation = null;

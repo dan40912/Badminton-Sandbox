@@ -21,7 +21,7 @@ Open `http://127.0.0.1:8765/AI/Badminton-Sandbox/`. Serve over HTTP rather than 
 - The skill workshop combines an existing signature move with speed, deception or control, a 100-momentum charge or a risky 70-momentum trigger, and four effect colors. A small trial canvas previews the player's shot speed and color without changing the match. Passive Wall supports a name and color; active bonuses and risky costs are restricted to active skills. Designs survive saved sessions and player-card sharing.
 
 - A skippable first-visit shuttle entrance and a three-step introduction. Help can replay it. System reduced-motion settings are respected; Court Settings also offers a simplified mode.
-- A character pool of eight cartoon players: Jay, Curt, Leo, KK (men) and Rena, Mia, Ivy, Nora (women). The player studio offers the characters that fit the slot; switching men's / women's / mixed doubles swaps in matching characters while keeping each slot's level, personality and style.
+- Sixteen original character presets in the existing ROSTER. Team Setup offers four team slots, a mode-filtered character grid, desktop detail drawer and mobile bottom sheet. Tap to assign or swap, drag characters or slots, and remove characters before filling the lineup. New assignments and gender replacements apply the complete preset; moving a character keeps its customized profile. Player Studio remains the single editor.
 - Four editable cartoon players: name, level 1–18 (default 6) tiered after the Taiwan Badminton Promotion Association scale; level drives per-shot error, shuttle speed (km/h and animation flight time) and outright-winner odds, personality, playing style, face shape, hairstyle, skin tone and accessory.
 - Men's / women's / mixed doubles; 21-point or 11-point games; single game or best-of-three.
 - Ability radar: five stats (power, speed, net, defense, control) plus a gold sixth "skill" axis. Level sets the point budget; style presets fill it and can be hand-tuned. Stats are read relative to the player's own average, so they shape strengths and weaknesses while level stays the overall strength.
@@ -77,3 +77,13 @@ Brain 使用淺膚色、平頭與綁結頭巾。選角卡顯示預設級數；�
 ### 能力雷達修正
 
 五軸呈現力量、速度、網前、防守、穩定；刻度固定 0–13，容納球拍與專長加成。實線為有效能力，虛線為原始分配。移除僅由級數生成的絕技展示軸；絕技保留獨立發動機制。角色卡雷達改為正常排版，避免覆蓋文字；編輯器顯示各能力作用與使用實際 shotSpeed 計算的殺球速度。模型以相對自身平均的 edge 計算特長，級數維持整體實力；不把雷達數值或面積解讀為固定勝率。44 項測試通過，涵蓋同級力量／防守／穩定對實際球路機率的影響。
+
+### Character Roster (2026-10-05)
+
+`ROSTER` remains the single, immutable template source. `characterPreset()` deep-copies a template into a player with a stable `characterId`; `profiles` retain the existing four-slot shape. Assignment prevents duplicate characters and uses `slotGender()` for every destination. Empty positions block entering or restarting the court until all four positions are filled.
+
+Each character has an original codename, tactical description, strengths, weaknesses, specialties, signature skill, appearance colors and bounded shot preferences. `choosePlan()` applies preferences after court, style and personality weights and before skill selection. Five-axis abilities and `shotOdds()` / `oddsFor()` remain responsible for outcomes. Preferences change selection frequency, not shot success probabilities.
+
+Version-2 sessions remain supported. Known legacy names gain identity metadata while retaining saved customizations; unrecognized custom names stay custom profiles. Player-card links now preserve identity, hair color, accent and tendencies; old links still decode. Hair and accessory colors follow the character through swaps, while jerseys follow the team. CourtRenderer's face cache includes appearance colors.
+
+`npm test` runs 53 tests, including the original regression coverage and nine character-roster tests. Racket-only and specialty-only fixtures explicitly clear preset specialties to continue testing those modifiers independently.

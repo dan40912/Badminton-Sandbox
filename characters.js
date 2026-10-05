@@ -1,4 +1,4 @@
-import { racketOf } from "./abilities.js?v=20261004-radar2";
+import { racketOf } from "./abilities.js?v=20261005-roster";
 export const TEAM_COLORS = ["#4782a5", "#4782a5", "#c56b57", "#c56b57"];
 export const escapeHTML = (s) =>
   String(s).replace(
@@ -13,7 +13,8 @@ export function portrait(p, index, opts = {}) {
   const skin =
       { light: "#f4d2ba", warm: "#dca77f", deep: "#a66c4d" }[p.skin] ||
       "#dca77f",
-    hair = ["#253b38", "#403b32", "#273d36", "#594236"][index],
+    hair = /^#[0-9a-f]{6}$/i.test(p.hairColor) ? p.hairColor : "#253b38",
+    identityAccent = /^#[0-9a-f]{6}$/i.test(p.visualTheme?.accent) ? p.visualTheme.accent : "#7b8260",
     jersey = TEAM_COLORS[index],
     outline = "#243b35",
     [frame, accent] = racketOf(p).colors;
@@ -56,9 +57,9 @@ export function portrait(p, index, opts = {}) {
       : '<path d="M91 121q9 6 18 0" fill="none" stroke="#243b35" stroke-width="2.2" stroke-linecap="round"/>';
   const accessory =
     p.accessory === "headscarf"
-      ? `<g fill="${jersey}" stroke="${outline}" stroke-width="1.5"><path d="M52 64q48-12 96 0l-2 16q-46-11-92 0Z"/><path d="M146 68q21-14 18 8l-16 5q23 7 13 26l-16-26Z"/></g><path d="M62 69q36-7 70-2" fill="none" stroke="#fffefa" stroke-width="2" opacity=".7"/>`
+      ? `<g fill="${identityAccent}" stroke="${outline}" stroke-width="1.5"><path d="M52 64q48-12 96 0l-2 16q-46-11-92 0Z"/><path d="M146 68q21-14 18 8l-16 5q23 7 13 26l-16-26Z"/></g><path d="M62 69q36-7 70-2" fill="none" stroke="#fffefa" stroke-width="2" opacity=".7"/>`
       : p.accessory === "band"
-      ? `<path d="M53 71q47-15 94 0l-1 10q-46-13-92 0Z" fill="#eef2dd" stroke="${outline}" stroke-width="1.5"/><path d="m93 66 13 10" stroke="${jersey}" stroke-width="3"/>`
+      ? `<path d="M53 71q47-15 94 0l-1 10q-46-13-92 0Z" fill="#eef2dd" stroke="${outline}" stroke-width="1.5"/><path d="m93 66 13 10" stroke="${identityAccent}" stroke-width="3"/>`
       : p.accessory === "glasses"
         ? '<g fill="none" stroke="#304f44" stroke-width="2.5"><rect x="63" y="89" width="32" height="23" rx="8"/><rect x="105" y="89" width="32" height="23" rx="8"/><path d="M95 97h10M54 95h9M137 95h9"/></g>'
         : "";
