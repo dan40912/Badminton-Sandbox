@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20261004-radar2" />
+    <link rel="stylesheet" href="styles.css?v=20261005-roster" />
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主要內容</a>
@@ -171,18 +171,9 @@
           <div class="roster-heading">
             <div>
               <span class="section-index">02 /</span
-              ><strong>認識你的四位球員</strong>
+              ><strong>組成你的雙打陣容</strong>
             </div>
-            <span>點選角色，調整個性與外觀</span>
-          </div>
-          <div class="team-headings">
-            <div>
-              <i class="team-dot blue"></i> BLUE TEAM <span>藍隊 / 我方</span>
-            </div>
-            <b>VS</b>
-            <div>
-              <i class="team-dot coral"></i> CORAL TEAM <span>紅隊 / 對方</span>
-            </div>
+            <span>選擇位置，再從角色池加入人物</span>
           </div>
           <div class="roster" id="roster"></div>
           <div class="setup-bottom">
@@ -607,6 +598,10 @@
                 >
               </div>
             </details>
+            <div class="form-grid identity-colors">
+              <label>髮色<input type="color" id="hairColor" value="#253b38" /></label>
+              <label>人物配件色<input type="color" id="identityAccent" value="#7b8260" /></label>
+            </div>
             <p id="playerError" class="field-error" role="alert"></p>
           </div>
         </div>
@@ -773,6 +768,6 @@
       </div>
     </dialog>
     <div id="toast" class="toast" hidden role="status"></div>
-    <script type="module" src="app.js?v=20261004-radar2"></script>
+    <script type="module" src="app.js?v=20261005-roster"></script>
   </body>
 </html>

@@ -129,7 +129,7 @@ test("rackets reshape stats without changing overall strength", async () => {
     assert(Math.abs(sum) <= 1, `${key} modifiers sum to ${sum}`);
     assert.equal(r.colors.length, 2);
   }
-  const p = { ...defaults()[0], racket: "standard" },
+  const p = { ...defaults()[0], racket: "standard", specialties: [] },
     heavy = { ...p, racket: "zf2" };
   assert.deepEqual(effectiveStats(p), p.stats);
   assert(edge(heavy, "power") > edge(p, "power"));

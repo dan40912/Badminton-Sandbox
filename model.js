@@ -3,7 +3,7 @@ import {
   skillBonus,
   skillDesign,
   SKILL_COLORS,
-} from "./workshop.js?v=20261004-radar2";
+} from "./workshop.js?v=20261005-roster";
 import {
   presetStats,
   skillFor,
@@ -12,7 +12,7 @@ import {
   skillFits,
   METER_FULL,
   gainMomentum,
-} from "./abilities.js?v=20261004-radar2";
+} from "./abilities.js?v=20261005-roster";
 export const clone = (value) => JSON.parse(JSON.stringify(value));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const team = (i) => (i < 2 ? 0 : 1);
@@ -269,6 +269,99 @@ export const ROSTER = [
   {"id": "ella", "name": "Ella", "gender": "女", "level": 5, "racket": "tkf", "personality": "balanced", "style": "allround", "face": "round", "hair": "pony", "skin": "light", "accessory": "glasses"},
   {"id": "aria", "name": "Aria", "gender": "女", "level": 9, "racket": "ars90k", "personality": "bold", "style": "drive", "face": "oval", "hair": "pony", "skin": "warm", "accessory": "headscarf"},
 ];
+// Enrich the existing templates; profiles always receive deep copies.
+const CHARACTER_NOTES = {
+  Jay: ["ANCHOR", "重砲後場主攻", "把每一次挑球，變成下壓的起點。", ["後場重殺", "連續下壓"], ["網前細節", "防守轉換"], ["heavy"], "thunder", "#253b38", "#a27443", {smash:1.65,jumpSmash:0.85,drop:0.8,drive:0.8}],
+  Curt: ["COMPASS", "網前戰術控制", "先控制網前，再安排下一拍。", ["封網布局", "落點控制"], ["後場爆發", "高速對抽"], ["trick"], "magic", "#403b32", "#5b8677", {net:1.5,push:1.4,cross:0.9,kill:0.8}],
+  Leo: ["ZIP", "高速平抽", "用速度搶到半拍空間。", ["快速平抽", "移位銜接"], ["長回合穩定", "網前細球"], ["chase"], "storm", "#273d36", "#688b91", {drive:1.8,push:0.8,lift:0.7}],
+  KK: ["REBOUND", "防守反擊", "接住壓力，把空檔還給對手。", ["接殺反擊", "防守耐心"], ["先手進攻", "網前搶高點"], ["steady"], "wall", "#594236", "#8b7c62", {block:1.55,lift:0.85,drive:1.2}],
+  Brain: ["READER", "全能戰術家", "讀懂空間，讓每一拍都有目的。", ["落點閱讀", "攻守調度"], ["單拍爆發", "極速對抽"], ["steady"], "hawk", "#303934", "#7b8260", {push:1.4,cut:1.3,drop:1.3,jumpSmash:0.65}],
+  Ethan: ["BREAKPOINT", "高風險爆發終結", "在機會出現的瞬間，全力終結。", ["跳殺爆發", "高點終結"], ["出手風險", "長回合耐心"], ["heavy"], "thunder", "#493a30", "#af7358", {jumpSmash:1.95,smash:0.8,stick:1.3,lift:0.6,drop:0.65}],
+  Owen: ["KEEPER", "韌性防守救球", "多接一拍，就多留一個機會。", ["救球韌性", "回位防守"], ["下壓威力", "搶攻節奏"], ["rescue"], "wall", "#30332f", "#7d8b73", {lift:1.65,block:1.15,smash:0.7}],
+  Noah: ["METRONOME", "節奏平抽控制", "快慢之間，找到自己的節奏。", ["平推落點", "節奏切換"], ["極限爆發", "網前撲殺"], ["steady"], "storm", "#685246", "#748d91", {drive:0.9,push:1.75,block:1.25,kill:0.75}],
+  Rena: ["THREAD", "細膩網前", "用最小的動作，織出最大的空間。", ["貼網小球", "細膩落點"], ["後場火力", "強壓接殺"], ["steady"], "magic", "#493b32", "#a08e73", {net:1.8,cross:0.85,kill:0.6,drop:1.2}],
+  Mia: ["RETURN", "防守反擊", "穩住來球，等待反擊的窗口。", ["卸力擋網", "轉守為攻"], ["跳殺爆發", "主動搶網"], ["rescue"], "wall", "#343932", "#839078", {block:1.7,lift:0.95,push:1.25}],
+  Ivy: ["PRESS", "持續強攻", "一拍下壓，一拍更近。", ["後場進攻", "點殺壓迫"], ["防守耐心", "細膩放網"], ["heavy"], "thunder", "#382f30", "#98715f", {smash:1.4,stick:1.65,jumpSmash:0.75,net:0.7}],
+  Nora: ["LANE", "中場平抽壓迫", "守住中場，把空間壓窄。", ["中場快壓", "平推穿隙"], ["深區重殺", "被動救球"], ["chase"], "storm", "#322f2b", "#7c8694", {drive:1.35,push:1.55,block:0.8}],
+  Luna: ["FEINT", "假動作網前變化", "相同的準備，另一個落點。", ["網前變向", "切吊欺敵"], ["直線重殺", "極速對抽"], ["trick"], "magic", "#5b4038", "#9a837d", {cross:1.85,cut:1.7,net:0.9,kill:0.7}],
+  Zoe: ["BURST", "爆發進攻", "用一拍加速，打開防線。", ["跳殺加速", "斜線進攻"], ["持續穩定", "防守細節"], ["heavy"], "thunder", "#2d3238", "#b28159", {jumpSmash:1.6,slice:1.7,smash:0.9,drop:0.8}],
+  Ella: ["BALANCE", "穩定全能", "把每一拍做好，讓隊伍安心前進。", ["穩定控球", "全面銜接"], ["終結爆發", "冒險搶攻"], ["steady"], "hawk", "#5c4d38", "#8c9674", {lift:1.25,block:1.3,drop:1.3,jumpSmash:0.6}],
+  Aria: ["TEMPO", "高速連續快攻", "連續加速，讓防守跟不上節拍。", ["高速銜接", "連續快攻"], ["長球耐心", "被動穩定"], ["chase"], "storm", "#453c36", "#aa7d76", {drive:1.7,kill:1.5,stick:1.35,lift:0.65}],
+};
+ROSTER.forEach((c) => {
+  const [codename, archetype, tagline, strengths, weaknesses, specialties, skill, hairColor, accent, tendencies] = CHARACTER_NOTES[c.name];
+  Object.assign(c, {characterId:c.id, codename, archetype, tagline,
+    shortBio:`${c.name} 喜歡${archetype}，以${strengths.join("與")}組織回合；遇到${weaknesses.join("與")}時需要隊友銜接。`,
+    strengths, weaknesses, specialties, skill, hairColor,
+    visualTheme:{accent}, tendencies, stats:presetStats(c.style,c.level)});
+});
+function freezeTemplate(value) {
+  Object.values(value).forEach((v) => { if(v && typeof v === "object") freezeTemplate(v); });
+  return Object.freeze(value);
+}
+freezeTemplate(ROSTER);
+export function characterPreset(id) {
+  const c = ROSTER.find((c) => c.id === id);
+  if (!c) throw new Error("Unknown character");
+  const {id:_, ...profile} = clone(c);
+  return profile;
+}
+// Missing multipliers are neutral; untrusted saved/shared values are bounded.
+export function normalizeTendencies(values = {}) {
+  return Object.fromEntries(Object.keys(SHOTS).filter((k) => Number.isFinite(values?.[k]))
+    .map((k) => [k, clamp(values[k], 0.5, 2)]));
+}
+export function migrateProfile(profile) {
+  const found = ROSTER.find((c) => c.id === profile.characterId) ||
+    (!profile.characterId ? ROSTER.find((c) => c.name === profile.name) : undefined);
+  const c = found && (!profile.gender || profile.gender === found.gender) ? found : undefined;
+  return {...(c ? characterPreset(c.id) : {}), ...clone(profile),
+    characterId:c?.id || null,
+    hairColor:/^#[0-9a-f]{6}$/i.test(profile.hairColor) ? profile.hairColor : c?.hairColor || "#253b38",
+    visualTheme:{accent:/^#[0-9a-f]{6}$/i.test(profile.visualTheme?.accent) ? profile.visualTheme.accent : c?.visualTheme.accent || "#7b8260"},
+    tendencies:normalizeTendencies(profile.tendencies ?? c?.tendencies)};
+}
+export function emptySlot(mode, i) {
+  return {...defaults(mode)[i], characterId:null, name:"未選角色", vacant:true};
+}
+// Assigning an existing character moves its customized instance, never duplicates it.
+export function assignCharacter(players, mode, id, target) {
+  if (!Number.isInteger(target) || target < 0 || target > 3) throw new Error("Invalid slot");
+  const c = ROSTER.find((c) => c.id === id);
+  if (!c || slotGender(mode,target) !== c.gender) throw new Error("角色性別不符合位置");
+  const out = clone(players), source = out.findIndex((p) => !p.vacant && p.characterId === id);
+  if (source === target) return out;
+  if (source >= 0) {
+    if (!out[target].vacant && genderOf(out[target]) !== slotGender(mode,source)) throw new Error("交換位置不符合性別限制");
+    [out[source],out[target]] = [out[target],out[source]];
+    if(out[source].vacant) out[source] = emptySlot(mode,source);
+  } else out[target] = characterPreset(id);
+  return out;
+}
+export function moveTeamSlot(players, mode, source, target) {
+  if (![source,target].every((i) => Number.isInteger(i) && i>=0 && i<4)) throw new Error("Invalid slot");
+  if (players[source].vacant) throw new Error("請先選擇角色");
+  if (genderOf(players[source]) !== slotGender(mode,target) ||
+      (!players[target].vacant && genderOf(players[target]) !== slotGender(mode,source))) throw new Error("交換位置不符合性別限制");
+  const out = clone(players);
+  [out[source],out[target]] = [out[target],out[source]];
+  if(out[source].vacant) out[source]=emptySlot(mode,source);
+  return out;
+}
+export function fitCharactersToMode(players, mode) {
+  const out = clone(players), used = new Set();
+  out.forEach((p,i) => {
+    if(p.vacant) { out[i]=emptySlot(mode,i); return; }
+    if(genderOf(p)===slotGender(mode,i) && (!p.characterId || !used.has(p.characterId))) {
+      if(p.characterId) used.add(p.characterId);
+    } else {
+      const c=ROSTER.find((c)=>c.gender===slotGender(mode,i) && !used.has(c.id) &&
+        !out.some((p,j)=>j>i && !p.vacant && p.characterId===c.id && genderOf(p)===slotGender(mode,j)));
+      out[i]=characterPreset(c.id); used.add(c.id);
+    }
+  });
+  return out;
+}
 // Slot order is blue 1, blue 2, coral 1, coral 2; mixed pairs a man and a woman.
 export function slotGender(mode, i) {
   return mode === "mixed"
@@ -290,12 +383,7 @@ export function defaults(mode = "men") {
   return [0, 1, 2, 3].map((i) => {
     const g = slotGender(mode, i),
       id = mode === "mixed" ? pick[g][[0, 0, 2, 2][i]] : pick[g][used[g]++];
-    const { id: _id, ...profile } = ROSTER.find((c) => c.id === id);
-    return {
-      ...profile,
-      stats: presetStats(profile.style, profile.level),
-      skill: skillFor(profile.style),
-    };
+    return characterPreset(id);
   });
 }
 export function seeded(seed = 20261003) {
@@ -541,6 +629,8 @@ export function choosePlan(s, profiles, random) {
     favorites?.forEach((k) => w[k] && (w[k] *= 2.4));
     if (p.personality === "bold") SMASHES.forEach((k) => (w[k] *= 1.7));
     if (p.personality === "patient") w.lift *= 1.8;
+    const tendencies = normalizeTendencies(p.tendencies);
+    Object.keys(w).forEach((k) => (w[k] *= tendencies[k] ?? 1));
     shot = weighted(Object.entries(w), random);
     // A full meter: decide whether to unleash the signature skill now.
     const sk = SKILLS[p.skill];

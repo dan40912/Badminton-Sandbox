@@ -3,10 +3,10 @@ import {
   sign,
   serveRegion,
   trajectory,
-} from "./model.js?v=20261004-radar2";
-import { portrait, TEAM_COLORS } from "./characters.js?v=20261004-radar2";
-import { Effects, speedWedges } from "./effects.js?v=20261004-radar2";
-import { racketOf } from "./abilities.js?v=20261004-radar2";
+} from "./model.js?v=20261005-roster";
+import { portrait, TEAM_COLORS } from "./characters.js?v=20261005-roster";
+import { Effects, speedWedges } from "./effects.js?v=20261005-roster";
+import { racketOf } from "./abilities.js?v=20261005-roster";
 // Camera rigs (metres, radians) along one elevation track the user can drag:
 // 0 = courtside seat, 0.7 = TV broadcast, 1 = high stand.
 const RIGS = [
@@ -188,9 +188,10 @@ export class CourtRenderer {
     const key = JSON.stringify([
       profile.face,
       profile.hair,
+      profile.hairColor,
+      profile.visualTheme?.accent,
       profile.skin,
       profile.accessory,
-      index,
       expression,
     ]);
     if (!this.faces.has(key)) {

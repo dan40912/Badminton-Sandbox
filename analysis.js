@@ -7,21 +7,22 @@ import {
   createMatch,
   nextRally,
   choosePlan,
+  migrateProfile,
   makeShot,
   seeded,
   validLevel,
   PERSONALITIES,
   STYLES,
   shotSpeed,
-} from "./model.js?v=20261004-radar2";
-import { skillDesign, specialties } from "./workshop.js?v=20261004-radar2";
+} from "./model.js?v=20261005-roster";
+import { skillDesign, specialties } from "./workshop.js?v=20261005-roster";
 import {
   presetStats,
   normalizeStats,
   skillFor,
   SKILLS,
   RACKETS,
-} from "./abilities.js?v=20261004-radar2";
+} from "./abilities.js?v=20261005-roster";
 
 const shotsOf = (rally) => rally.filter((e) => e.kind === "shot");
 const speedOf = (e, profiles) =>
@@ -183,6 +184,10 @@ const CARD_KEYS = [
   "racket",
   "skillDesign",
   "specialties",
+  "characterId",
+  "hairColor",
+  "visualTheme",
+  "tendencies",
 ];
 export function encodeCard(profile) {
   const card = Object.fromEntries(CARD_KEYS.map((k) => [k, profile[k]])),
@@ -206,7 +211,8 @@ export function decodeCard(text) {
       return null;
     if (Object.entries(LOOKS).some(([k, ok]) => !ok.includes(c[k])))
       return null;
-    return {
+    return migrateProfile({
+      characterId:c.characterId, hairColor:c.hairColor, visualTheme:c.visualTheme, tendencies:c.tendencies,
       name,
       gender: c.gender === "女" ? "女" : "男",
       level: c.level,
@@ -223,7 +229,7 @@ export function decodeCard(text) {
       racket: RACKETS[c.racket] ? c.racket : "standard",
       skillDesign: c.skillDesign ? skillDesign(c.skillDesign) : undefined,
       specialties: specialties(c.specialties),
-    };
+    });
   } catch {
     return null;
   }
