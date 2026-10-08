@@ -1,10 +1,10 @@
 // Team selection uses existing profiles and Player Studio through callbacks.
-import {ROSTER, characterPreset, slotGender, genderOf} from './model.js?v=20261005-roster';
-import {PERSONALITIES, STYLES} from './model.js?v=20261005-roster';
-import {portrait, escapeHTML as safe} from './characters.js?v=20261005-roster';
-import {effectiveStats, SKILLS, racketOf} from './abilities.js?v=20261005-roster';
-import {SPECIALTIES} from './workshop.js?v=20261005-roster';
-import {radarSVG} from './radar.js?v=20261005-roster';
+import {ROSTER, characterPreset, slotGender, genderOf} from './model.js?v=20261008-targets';
+import {PERSONALITIES, STYLES} from './model.js?v=20261008-targets';
+import {portrait, escapeHTML as safe} from './characters.js?v=20261008-targets';
+import {effectiveStats, SKILLS, racketOf} from './abilities.js?v=20261008-targets';
+import {SPECIALTIES} from './workshop.js?v=20261008-targets';
+import {radarSVG} from './radar.js?v=20261008-targets';
 let selectedSlot=0, moving=null;
 export function renderTeamRoster(root, players, mode, actions) {
   if (!document.getElementById('characterDetail')) {

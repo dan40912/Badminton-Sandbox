@@ -14,15 +14,15 @@ import {
   PERSONALITIES,
   STYLES,
   shotSpeed,
-} from "./model.js?v=20261005-roster";
-import { skillDesign, specialties } from "./workshop.js?v=20261005-roster";
+} from "./model.js?v=20261008-targets";
+import { skillDesign, specialties } from "./workshop.js?v=20261008-targets";
 import {
   presetStats,
   normalizeStats,
   skillFor,
   SKILLS,
   RACKETS,
-} from "./abilities.js?v=20261005-roster";
+} from "./abilities.js?v=20261008-targets";
 
 const shotsOf = (rally) => rally.filter((e) => e.kind === "shot");
 const speedOf = (e, profiles) =>
@@ -164,9 +164,9 @@ export function matchup(profile, { rallies = 400, seed = 11 } = {}) {
 // Shareable player cards: a compact, validated JSON payload in the URL hash.
 const LOOKS = {
   face: ["round", "oval", "angular"],
-  hair: ["crop", "sweep", "bob", "pony", "buzz"],
+  hair: ["crop", "sweep", "bob", "pony", "buzz", "curls", "bun", "braid", "mohawk"],
   skin: ["light", "warm", "deep"],
-  accessory: ["none", "band", "glasses", "headscarf"],
+  accessory: ["none", "band", "glasses", "headscarf", "visor"],
 };
 const CARD_KEYS = [
   "name",

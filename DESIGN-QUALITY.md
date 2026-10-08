@@ -60,3 +60,11 @@ Rebuild both screens as a distinctive, polished badminton tactics experience, us
 - Browser interaction verified: full Ethan preset into Player Studio; Studio replacement with Brain; mixed-mode gender replacement; tap assignment of Luna; removal disables court entry; refilling enables it; tap swap between women's slots; entry to the existing court with the assigned lineup; reload keeps saved profiles.
 - Drag handlers use the same assignment / swap rules as tap actions; pure tests verify stable characterId, uniqueness, gender restrictions and retained customized appearance. Synthetic drag through the in-app browser did not produce a drop, so native desktop drag still needs manual verification in Chrome.
 - Full Node suite: 53 / 53 pass, including 100 seeded complete matches, probability invariants, tendency distribution, immutable templates, old profile migration and shared-card compatibility.
+
+## Shot targets and portraits verification — 2026-10-08
+
+- 57 / 57 Node tests pass. New coverage verifies all service diagonals and score parity, short/long depth rejection, rally target filtering, midpoint updates, intended waist receiver and successful waist-height contact; existing seeded match and net-clearance checks remain green.
+- Chrome at 1440 × 1000 and 390 × 844: short/high/flick switching exposes only the corresponding three targets, clears incompatible selections, and rejects court taps in the wrong depth zone. Rally lifts show rear targets, net shots show front targets; between-player and left/right waist choices select correctly and complete a manual rally.
+- Real pointer drags move opponents and update the selected waist target and midpoint. Both viewport widths have no horizontal document overflow; the court has nonblank pixels after rendering. The mobile canvas can briefly be cleared during a resize, so pixel checks wait for the next rendered frame.
+- Visual review covers men's team portraits, all eight women's portraits, the court, short-service controls and the expanded waist-target grid. New hair/accessory selections persist after reload; rendered SVGs parse without errors and both browser passes report no page errors.
+- Local screenshots were inspected in `/tmp/badminton-qa/`; they are transient QA evidence, not repository deliverables. Existing wider design-audit items above remain unchanged.

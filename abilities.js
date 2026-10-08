@@ -3,7 +3,7 @@
 // Stats express a player's *shape*: the model reads each stat relative to the
 // player's own average, so strengths come with matching weaknesses and level
 // stays the single measure of overall strength.
-import { specialties, SPECIALTIES } from "./workshop.js?v=20261005-roster";
+import { specialties, SPECIALTIES } from "./workshop.js?v=20261008-targets";
 export const STATS = [
   { key: "power", label: "力量", note: "殺球、平抽的球速與得分率" },
   { key: "speed", label: "速度", note: "回位範圍，被調動時能否接到" },

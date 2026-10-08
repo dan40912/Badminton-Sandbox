@@ -1,6 +1,6 @@
 // Five actual simulation abilities, on a shared equipment-inclusive scale.
-import { STATS } from "./abilities.js?v=20261005-roster";
-import { escapeHTML } from "./characters.js?v=20261005-roster";
+import { STATS } from "./abilities.js?v=20261008-targets";
+import { escapeHTML } from "./characters.js?v=20261008-targets";
 export const RADAR_MAX = 13;
 export function radarSVG(stats, {color="#4782a5", size=220, labels=true, title="能力雷達圖", base=null}={}) {
   const c=size/2, r=size*.30, axes=STATS,

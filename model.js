@@ -3,7 +3,7 @@ import {
   skillBonus,
   skillDesign,
   SKILL_COLORS,
-} from "./workshop.js?v=20261005-roster";
+} from "./workshop.js?v=20261008-targets";
 import {
   presetStats,
   skillFor,
@@ -12,7 +12,7 @@ import {
   skillFits,
   METER_FULL,
   gainMomentum,
-} from "./abilities.js?v=20261005-roster";
+} from "./abilities.js?v=20261008-targets";
 export const clone = (value) => JSON.parse(JSON.stringify(value));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const team = (i) => (i < 2 ? 0 : 1);
@@ -295,6 +295,9 @@ ROSTER.forEach((c) => {
     strengths, weaknesses, specialties, skill, hairColor,
     visualTheme:{accent}, tendencies, stats:presetStats(c.style,c.level)});
 });
+Object.entries({ kai: "mohawk", ethan: "curls", luna: "bun", ella: "braid", aria: "braid" })
+  .forEach(([id, hair]) => { ROSTER.find((c) => c.id === id).hair = hair; });
+ROSTER.find((c) => c.id === "noah").accessory = "visor";
 function freezeTemplate(value) {
   Object.values(value).forEach((v) => { if(v && typeof v === "object") freezeTemplate(v); });
   return Object.freeze(value);
@@ -373,7 +376,7 @@ export function slotGender(mode, i) {
       : "男";
 }
 export const genderOf = (p) =>
-  p.gender || (["bob", "pony"].includes(p.hair) ? "女" : "男");
+  p.gender || (["bob", "pony", "bun", "braid"].includes(p.hair) ? "女" : "男");
 export function defaults(mode = "men") {
   const pick = {
       男: ["ze", "yu", "kai", "xiang"],
@@ -456,8 +459,22 @@ export function serveRegion(s) {
     z1: z > 0 ? -1.98 : 5.94,
   };
 }
-export function legalTarget(s, p) {
+export function targetDepth(s, shot) {
+  if (s.phase === "serve") return shot === "short" ? [1.98, 3] : [4.8, 5.94];
+  if (shot === "lift") return [4.8, 6.7];
+  if (["drop", "net", "block", "cut", "cross"].includes(shot)) return [0, 1.98];
+  return [0, 6.7];
+}
+const WAIST_SHOTS = ["drive", "push", ...SMASHES, "kill"];
+export function legalTarget(s, p, shot) {
   if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) return false;
+  if (shot) {
+    const [near, far] = targetDepth(s, shot);
+    if (Math.abs(p.z) < near || Math.abs(p.z) > far) return false;
+    if (p.kind === "waist" && (!WAIST_SHOTS.includes(shot) ||
+        !Number.isInteger(p.player) || p.player < 0 || p.player > 3 || team(p.player) === s.turn ||
+        p.x !== s.positions[p.player].x || p.z !== s.positions[p.player].z)) return false;
+  }
   if (s.phase === "serve") {
     const r = serveRegion(s);
     return p.x >= r.x0 && p.x <= r.x1 && p.z >= r.z0 && p.z <= r.z1;
@@ -521,10 +538,10 @@ export function targetPresets(s, shot) {
       ["長內", x * 0.2, z * 5.6],
       ["長中", x * 1.4, z * 5.6],
       ["長外", x * 2.75, z * 5.6],
-    ].map(([label, x, z]) => ({ label, x, z }));
+    ].map(([label, x, z]) => ({ label, x, z })).filter((p) => legalTarget(s, p, shot));
   }
   const z = s.turn === 0 ? -1 : 1;
-  return [
+  const points = [
     ["後左", -2.45, z * 6.05],
     ["後中", 0, z * 6.05],
     ["後右", 2.45, z * 6.05],
@@ -535,6 +552,17 @@ export function targetPresets(s, shot) {
     ["網中", 0, z * 0.7],
     ["網右", 2.2, z * 0.7],
   ].map(([label, x, z]) => ({ label, x, z }));
+  const opponents = (s.turn === 0 ? [2, 3] : [0, 1])
+    .sort((a, b) => s.positions[a].x - s.positions[b].x);
+  const [left, right] = opponents.map((i) => s.positions[i]);
+  points.push({ label: "兩人中間", kind: "gap", x: (left.x + right.x) / 2, z: (left.z + right.z) / 2 });
+  if (WAIST_SHOTS.includes(shot)) {
+    opponents.forEach((player, i) => points.push({
+      label: i === 0 ? "左側腰帶球" : "右側腰帶球",
+      x: s.positions[player].x, z: s.positions[player].z, kind: "waist", player,
+    }));
+  }
+  return points.filter((p) => legalTarget(s, p, shot));
 }
 export function awardPoint(input, winner, reason = "手動指定得分") {
   const s = clone(input);
@@ -773,6 +801,9 @@ function saveChance(p, d, shot) {
 }
 export function receiverFor(s, actor, target) {
   if (s.phase === "serve") return s.receiver;
+  if (target.kind === "waist" && Number.isInteger(target.player) &&
+      target.player >= 0 && target.player < 4 && team(target.player) !== team(actor))
+    return target.player;
   const opponents = team(actor) === 0 ? [2, 3] : [0, 1],
     far = (i) =>
       Math.hypot(s.positions[i].x - target.x, s.positions[i].z - target.z);
@@ -883,7 +914,7 @@ export function makeShot(
   }
   if (!actors(s).includes(actor)) throw Error("請選擇這一拍可擊球的球員");
   if (!shotKeys(s).includes(shot)) throw Error("球路不適用於目前回合");
-  if (!legalTarget(s, target)) throw Error("請選擇對方有效區域的落點");
+  if (!legalTarget(s, target, shot)) throw Error("請選擇符合這種球路的有效落點");
   if (s.phase === "serve" && !validStanding(s))
     throw Error("發球者與接發者須站在斜對角發球區內");
   const from = clone(s.phase === "serve" ? s.positions[actor] : s.origin);
@@ -942,7 +973,7 @@ export function makeShot(
     }
   }
   if (outcome === "return" || outcome === "save")
-    after.positions[receiver] = clone(target);
+    after.positions[receiver] = { x: target.x, z: target.z };
   else if (outcome === "winner") {
     const start = s.positions[receiver];
     after.positions[receiver] = {
@@ -950,7 +981,7 @@ export function makeShot(
       z: start.z + (target.z - start.z) * 0.65,
     };
   }
-  after.origin = clone(actual);
+  after.origin = { x: actual.x, z: actual.z };
   after.turn = 1 - team(actor);
   after.phase = "rally";
   after.total++;
@@ -1016,12 +1047,13 @@ export function trajectory(event, t) {
           ? 0.65
           : 0.6;
   const crossing = -event.from.z / (event.actual.z - event.from.z);
+  const end = event.actual.kind === "waist" && !["net", "out"].includes(event.outcome) ? 1.05 : 0.12;
   // A completed return must visibly clear the net; a failed net shot must not.
   if (event.outcome !== "net" && crossing > 0 && crossing < 1) {
-    const base = start * (1 - crossing) + 0.12 * crossing;
+    const base = start * (1 - crossing) + end * crossing;
     arc = Math.max(arc, (1.68 - base) / Math.sin(Math.PI * crossing));
   }
-  let h = start * (1 - t) + 0.12 * t + arc * Math.sin(Math.PI * t);
+  let h = start * (1 - t) + end * t + arc * Math.sin(Math.PI * t);
   if (event.outcome === "net")
     h = 1.1 * (1 - t) + 0.15 * t + 0.35 * Math.sin(Math.PI * t);
   return {

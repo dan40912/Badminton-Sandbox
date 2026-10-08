@@ -2,11 +2,12 @@ import {
   clamp,
   sign,
   serveRegion,
+  targetDepth,
   trajectory,
-} from "./model.js?v=20261005-roster";
-import { portrait, TEAM_COLORS } from "./characters.js?v=20261005-roster";
-import { Effects, speedWedges } from "./effects.js?v=20261005-roster";
-import { racketOf } from "./abilities.js?v=20261005-roster";
+} from "./model.js?v=20261008-targets";
+import { portrait, TEAM_COLORS } from "./characters.js?v=20261008-targets";
+import { Effects, speedWedges } from "./effects.js?v=20261008-targets";
+import { racketOf } from "./abilities.js?v=20261008-targets";
 // Camera rigs (metres, radians) along one elevation track the user can drag:
 // 0 = courtside seat, 0.7 = TV broadcast, 1 = high stand.
 const RIGS = [
@@ -192,6 +193,7 @@ export class CourtRenderer {
       profile.visualTheme?.accent,
       profile.skin,
       profile.accessory,
+      profile.personality,
       expression,
     ]);
     if (!this.faces.has(key)) {
@@ -296,7 +298,7 @@ export class CourtRenderer {
     c.fillStyle = color;
     c.fill();
   }
-  drawCourt(state) {
+  drawCourt(state, shot) {
     const c = this.ctx,
       s = this.scale;
     this.polygon(
@@ -336,14 +338,16 @@ export class CourtRenderer {
         ],
         "#fff4",
       );
-    if (state.phase === "serve") {
-      const r = serveRegion(state);
+    if (state.phase !== "ended" && (state.phase === "serve" || shot)) {
+      const r = state.phase === "serve" ? serveRegion(state) : { x0: -3.05, x1: 3.05 };
+      const [near, far] = shot ? targetDepth(state, shot) : [1.98, 5.94];
+      const z = state.turn === 0 ? -1 : 1;
       this.polygon(
         [
-          [r.x0, r.z0],
-          [r.x1, r.z0],
-          [r.x1, r.z1],
-          [r.x0, r.z1],
+          [r.x0, z * near],
+          [r.x1, z * near],
+          [r.x1, z * far],
+          [r.x0, z * far],
         ],
         "#e7f1a342",
       );
@@ -706,7 +710,7 @@ export class CourtRenderer {
     const jolt = reduceMotion ? { x: 0, y: 0 } : this.effects.offset(time);
     c.save();
     c.translate(jolt.x, jolt.y);
-    this.drawCourt(state);
+    this.drawCourt(state, previewShot);
     if (tension > 0) this.effects.tension(tension, reduceMotion ? 0 : time);
     if (showTrail)
       trail

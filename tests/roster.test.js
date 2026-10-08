@@ -88,5 +88,17 @@ test('CourtRenderer caches faces by character appearance and invalidates customi
     assert.equal(renderer.face(p,3,'ready'),first);
     assert.notEqual(renderer.face({...p,hairColor:'#ffffff'},0,'ready'),first);
     assert.notEqual(renderer.face({...p,visualTheme:{accent:'#ffffff'}},0,'ready'),first);
+    assert.notEqual(renderer.face({...p,personality:'bold'},0,'ready'),first);
   } finally {globalThis.Image=oldImage;}
+});
+
+test('new hair silhouettes and visor survive sharing and affect the portrait',()=>{
+  const base=characterPreset('brain'), images=new Set();
+  for(const hair of ['buzz','crop','sweep','bob','pony','curls','bun','braid','mohawk']) {
+    const p={...base,hair,accessory:'visor'}, decoded=decodeCard(encodeCard(p));
+    assert(decoded);assert.equal(decoded.hair,hair);assert.equal(decoded.accessory,'visor');
+    images.add(portrait(decoded,0,{faceOnly:true}));
+  }
+  assert.equal(images.size,9);
+  assert.notEqual(portrait({...base,personality:'bold'},0),portrait({...base,personality:'patient'},0));
 });

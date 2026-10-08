@@ -1,4 +1,4 @@
-import {renderTeamRoster} from "./roster-ui.js?v=20261005-roster";
+import {renderTeamRoster} from "./roster-ui.js?v=20261008-targets";
 import {
   clone,
   clamp,
@@ -12,6 +12,7 @@ import {
   actors,
   shotKeys,
   targetPresets,
+  targetDepth,
   legalTarget,
   choosePlan,
   makeShot,
@@ -36,15 +37,15 @@ import {
   POWER_SHOTS,
   SMASHES,
   pointLabel,
-} from "./model.js?v=20261005-roster";
-import { playHit, unlockAudio } from "./audio.js?v=20261005-roster";
+} from "./model.js?v=20261008-targets";
+import { playHit, unlockAudio } from "./audio.js?v=20261008-targets";
 import {
   portrait,
   describe,
   escapeHTML,
   TEAM_COLORS,
-} from "./characters.js?v=20261005-roster";
-import { CourtRenderer, ELEVATION } from "./court.js?v=20261005-roster";
+} from "./characters.js?v=20261008-targets";
+import { CourtRenderer, ELEVATION } from "./court.js?v=20261008-targets";
 import {
   SPECIALTIES,
   specialties,
@@ -52,7 +53,7 @@ import {
   skillCost,
   skillBonus,
   SKILL_COLORS,
-} from "./workshop.js?v=20261005-roster";
+} from "./workshop.js?v=20261008-targets";
 import {
   STATS,
   STAT_MAX,
@@ -70,8 +71,8 @@ import {
   RACKETS,
   racketOf,
   effectiveStats,
-} from "./abilities.js?v=20261005-roster";
-import { radarSVG } from "./radar.js?v=20261005-roster";
+} from "./abilities.js?v=20261008-targets";
+import { radarSVG } from "./radar.js?v=20261008-targets";
 import {
   summarize,
   insight,
@@ -81,8 +82,8 @@ import {
   decodeCard,
   settlement,
   gameScores,
-} from "./analysis.js?v=20261005-roster";
-import { shotContext } from "./coaching.js?v=20261005-roster";
+} from "./analysis.js?v=20261008-targets";
+import { shotContext } from "./coaching.js?v=20261008-targets";
 const $ = (id) => document.getElementById(id),
   safe = escapeHTML;
 const STORAGE = "rally-lab-session-v2",
@@ -857,6 +858,7 @@ function updateUI() {
     busy || ended,
   );
   if (!shotKeys(s).includes(shot)) shot = shotKeys(s)[0];
+  if (target && !target.kind && !legalTarget(s, target, shot)) target = null;
   buttonList(
     "shotButtons",
     shotKeys(s).map((key) => ({
@@ -866,6 +868,7 @@ function updateUI() {
     shot,
     (item) => {
       shot = item.value;
+      if (target && !legalTarget(s, target, shot)) target = null;
       note(SHOTS[shot].label, target ? plannedNote(s) : SHOTS[shot].note);
       updateUI();
     },
@@ -890,20 +893,24 @@ function updateUI() {
       ),
     );
   const points = targetPresets(s, shot);
+  if (target?.kind) target = clone(points.find((p) =>
+    p.kind === target.kind && p.player === target.player) || null);
   buttonList(
     "targetButtons",
     points.map((p, i) => ({ label: p.label, value: i, point: p })),
-    points.findIndex((p) => target && p.x === target.x && p.z === target.z),
+    points.findIndex((p) => target && p.x === target.x && p.z === target.z &&
+      p.kind === target.kind && (!target.label || p.label === target.label)),
     (item) => {
-      target = { x: item.point.x, z: item.point.z };
+      target = clone(item.point);
       note("落點已選，準備擊球", plannedNote(s));
       updateUI();
     },
     busy || ended,
   );
+  const [near, far] = targetDepth(s, shot);
   $("targetLabel").textContent = target
-    ? `落點：橫向 ${target.x.toFixed(1)} m / 距網 ${Math.abs(target.z).toFixed(1)} m`
-    : "也可以直接點球場";
+    ? `${target.label || "自訂落點"}：距網 ${Math.abs(target.z).toFixed(1)} m${target.kind === "waist" ? " · 腰部高度" : ""}`
+    : `可點球場選擇距網 ${near.toFixed(1)}–${far.toFixed(1)} m 的位置`;
   $("courtHint").textContent =
     reviewIndex !== null
       ? "選擇其他拍數回看，或從這一拍重新推演"
@@ -1912,11 +1919,10 @@ $("court").addEventListener("pointerdown", (e) => {
 function pickTarget(clientX, clientY) {
   if (courtLocked()) return;
   const point = renderer.point(clientX, clientY);
-  if (!legalTarget(match, point)) {
+  if (!legalTarget(match, point, shot)) {
+    const [near, far] = targetDepth(match, shot);
     toast(
-      match.phase === "serve"
-        ? "發球請選黃色斜對角接發球區內。"
-        : "請選對方半場內的落點。",
+      `${SHOTS[shot].label}請選對方${match.phase === "serve" ? "斜對角發球區" : "半場"}內，距網 ${near.toFixed(1)}–${far.toFixed(1)} m 的位置。`,
     );
     return;
   }

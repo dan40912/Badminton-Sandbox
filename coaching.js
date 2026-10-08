@@ -1,4 +1,4 @@
-import { SHOTS, team } from "./model.js?v=20261005-roster";
+import { SHOTS, team } from "./model.js?v=20261008-targets";
 
 // Describe observed geometry, without presenting simulated outcomes as certainty.
 export function shotContext(
